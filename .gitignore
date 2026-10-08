@@ -1,0 +1,9 @@
+# Raw WaveForms recordings (large binary, kept outside git)
+data/*.bin
+
+# MATLAB autosave and macOS metadata
+*.asv
+.DS_Store
+
+*.key
+

@@ -1,0 +1,59 @@
+# Test 1 (current consumption), session 2: recording configuration
+session: 2
+date: 2026-10-09
+test_script: ../og_current_test.m
+
+device:
+  name: OLI-O-0001               # deviceName in og_current_test.m (session 1 used FKY-O-0024)
+  bridge: tcp://172.24.156.77:5555
+
+circuit:
+  supply_V: 4.1
+  shunt_ohm: 10                 # high side, between supply and device
+  measured: voltage across shunt
+  current_formula: I_mA = V / 10 * 1000
+
+recording:
+  instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
+  file: optogrid_individual_function_test_091026_2.bin
+  type: Binary File (*.bin)
+  format: 16 bit signed         # little-endian int16, no header
+  channels: [1]                 # Channel 1 only, Channel 2 off
+  digital: false
+  sample_rate_Hz: 200000        # WaveForms setting 200 kHz
+  total_time_s: 130
+  samples_planned: 26000000     # 26 M
+  file_bytes: 51967232          # 25983616 samples, 129.92 s at 200 kHz
+  start: trigger T0, before og_current_test.m was started
+  waveforms_conversion: Volts = Range * Sample / 65536 + Offset
+  channel: "1 (1±), differential"
+  channel_range_V_per_div: 0.2  # Scope Ch1 range 200 mV/div (5 V hardware full scale)
+  channel_offset_V: 0           # Scope Ch1 offset 0 V
+
+stimulation:                    # og.OptoSetting loaded before og.program
+  sequence_length: 1
+  led_selection: 18446744073709551615   # intmax('uint64'), all 64 LEDs
+  period_ms: 130                # 64*2 + 2
+  pulse_width_ms: 2
+  duration_ms: 13000            # 100 sweeps
+  ramp_up_ms: 0
+  ramp_down_ms: 6500            # 50 sweeps
+  amplitude: 100
+  pwm_frequency_Hz: 50000
+
+schedule_s:                     # from og_current_test.m; read by analyse_current_test.m
+  iti: 3                        # between tasks 1-8
+  1_idle: 5
+  2_status_led: 5
+  3_sham_led: 5
+  4_program: 5
+  5_stimulation_hold: 21.5      # 13 s + 6.5 s stimulation + 2 s margin
+  6_imu_streaming: 15
+  7_battery_reads: 10           # number of og.readbattery calls
+  7_battery_read_gap: 0.5       # s between reads
+  8_uled_checks: 10             # number of og.readuLEDCheck calls
+  8_uled_check_gap: 0.5         # s between reads
+  9_end_idle: 20                # starts right after task 8
+  planned_total: 112.5
+
+notes: ""

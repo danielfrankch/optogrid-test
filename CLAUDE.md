@@ -1,11 +1,32 @@
-# OptoGrid current consumption test
+# OptoGrid bench tests
+
+Bench tests of the OptoGrid wireless optogenetics device, one folder per test:
+
+| Folder | Contents |
+|--------|----------|
+| `pilot-consumption-test/` | First current consumption test (2026-10-08): test script, analysis, data, results, method slide. Documented below. |
+| `1-current-consumption-test/` | Test 1: `og_current_test.m` (100 + 50 stimulation sweeps, 40 s end idle), `session-1/`, `session-2/`, `analysis/analyse_current_test.m` |
+| `2-latency-test/` | Test 2: `og_latency_setup.m` programs LED 1 and ends; each function generator pulse (CH2) sends a Bluetooth trigger command; CH1 is an optical sensor on the LED (or the shunt current, `ch1_type` in meta.yml). `analysis/analyse_latency_test.m` measures trigger pulse start to first light (start of the low-level steps before the main rise). Session 1 (5 ms flash, 31.3 ms trigger period): latency spreads evenly over ~3.5-11.2 ms (the 7.5 ms Bluetooth connection interval) plus a tail of missed connection events; median 8.0 ms. A trigger period that is a multiple of 2.5 ms (e.g. 50 ms) gives discrete 2.5 ms clusters instead. |
+| `3-wireless-power-transfer-test/` | `session-1/`, `analysis/` (not started) |
+
+Empty folders hold a `.gitkeep` so git tracks them. Raw `.bin` recordings are git-ignored
+everywhere. Use kebab-case folder names (no spaces).
+
+Each `session-N/` holds its `.bin` recording(s) directly (no `data/` subfolder) and a `meta.yml` logging the recording settings
+(WaveForms record settings, Scope Ch1 range and offset, device, stimulation, schedule).
+`meta.yml` is the reference: the test 1 analysis reads file, sample rate, range and
+offset from it. Test 1 session 1: 299.401 kHz, 500 mV/div, 0 V offset; connected idle
+0.70 mA mean with a floor at 0 mA (the pilot, at -200 mV offset, read a 2.2 mA floor;
+check the pilot offset with a zero-current recording before comparing absolute values).
+
+# Pilot consumption test (`pilot-consumption-test/`)
 
 Bench test of the OptoGrid wireless optogenetics device. A MATLAB script plays a fixed
 sequence of device functions over Bluetooth while a Digilent Analog Discovery Studio
 records the voltage across a shunt resistor in series with the device. A second MATLAB
 script turns the recording into per-function current figures and tables.
 
-## Files
+## Files (paths relative to `pilot-consumption-test/`)
 
 - `og_test_1.m`: runs the test sequence on the device. All timing and the stimulation
   settings are defined at the top of the file. The total must stay under 80 s (the script
@@ -13,7 +34,9 @@ script turns the recording into per-function current figures and tables.
 - `analyse_og_test_1.m`: analyses the recordings in `data/` and writes figures and CSVs
   to `results/<session>/`. Its schedule settings must match `og_test_1.m`.
 - `data/*.bin`: WaveForms Scope "Record to File" binary recordings.
-- OptoGrid MATLAB class (not in this repo): `../optogrid-manager/matlab-optogrid/OptoGrid.m`.
+- `test_method.key` / `test_method.pdf`: method slide (circuit and test sequence).
+- OptoGrid MATLAB class (not in this repo): `optogrid-manager/matlab-optogrid/OptoGrid.m`,
+  next to this repo.
   It talks to the device through a ZMQ bridge (`tcp://localhost:5555`), with a 60 s reply timeout.
 
 ## Test sequence (`og_test_1.m`)
@@ -111,5 +134,5 @@ panel letters, 18 cm width, Paul Tol muted palette with one fixed colour per tas
 ## Conventions
 
 - MATLAB R2025b is installed at `/Applications/MATLAB_R2025b.app`. Scripts can be run
-  headless with `matlab -batch "analyse_og_test_1"`.
+  headless from the test folder, e.g. `cd pilot-consumption-test && matlab -batch "analyse_og_test_1"`.
 - Keep every user-tunable setting at the top of each script.

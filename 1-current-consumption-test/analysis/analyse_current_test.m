@@ -1,6 +1,7 @@
 % Analyse OptoGrid current consumption recorded during og_current_test.m (test 1)
 % Run from MATLAB (Run button, or `analyse_current_test` from any folder).
-% By default it analyses the newest .bin in ../session-*/ with that
+% By default it analyses the newest .bin in the recording folders (../session-*/,
+% ../device_*/, ...) with that
 % session's meta.yml, which supplies the recording settings, the task
 % schedule and the stimulation settings.
 % Input: WaveForms Scope "Record to File" binary (raw int16 ADC samples, one
@@ -22,7 +23,7 @@ testDir = fileparts(rootDir);                   % 1-current-consumption-test/
 outDir  = fullfile(rootDir, 'results');
 
 % Which recordings to analyse: 'newest' = the most recently written .bin in
-% any ../session-*/ folder; 'all' = the newest .bin of every session.
+% any recording folder; 'all' = the newest .bin of every recording folder.
 % Each session's meta.yml is the reference for its recording (file,
 % sample_rate_Hz, channel_range_V_per_div, channel_offset_V), task schedule
 % (schedule_s) and stimulation (period_ms, duration_ms, ramp_down_ms).
@@ -54,6 +55,7 @@ ledOnsetFrac  = 0.15;    % turn-on transient starts where it rises 15% of its he
 ledLead       = 0.02e-3; % LED window starts this long before the transient starts (s)
 ledTail       = 0.1e-3;  % LED window ends this long before the next slot's window (s)
 darkLedFrac   = 0.3;     % LED current below this fraction of the median LED is flagged as not lighting
+ledHistBin_mA = 0.1;     % bin width of the per-LED current histogram (Figure 7)
 nRefSweeps    = 10;      % full-amplitude sweeps shown before the ramp-down in Figure 6
 
 % Figure style (Paul Tol 'muted' palette, colourblind-safe)
@@ -71,7 +73,7 @@ darkColor = [0.7 0.7 0.7];                    % LEDs not lighting
 %% Find recordings
 recs = findRecordings(testDir, whichData);
 if isempty(recs)
-    error('No .bin recordings found in %s', fullfile(testDir, 'session-*'));
+    error('No .bin recordings found in the folders of %s', testDir);
 end
 
 for s = 1:numel(recs)
@@ -173,8 +175,8 @@ for s = 1:numel(recs)
 
     % Windows: name, start, end, trim edges for stats
     W = {
-        'Pre-script',          0,             task1Start - 0.5,  false
-        'Idle (pre-IMU)',      task1Start,    task1Start + idleDur, true
+        'Pre-connection',      0,             task1Start - 0.5,  false
+        'Idle',                task1Start,    task1Start + idleDur, true
         'Status LED',          statusOn,      statusOff,         true
         'Sham LED',            shamOn,        shamOff,           true
         'Program',             programOn,     programOn + programDur, false
@@ -198,15 +200,15 @@ for s = 1:numel(recs)
         Task(w) = W{w,1}; tStart(w) = W{w,2}; tEnd(w) = W{w,3};
         Mean_mA(w) = mean(x); Median_mA(w) = median(x); SD_mA(w) = std(x); Peak_mA(w) = max(x);
     end
-    AboveIdle_mA = Mean_mA - Mean_mA(Task == "Idle (pre-IMU)");
+    AboveIdle_mA = Mean_mA - Mean_mA(Task == "Idle");
     taskTbl = table(Task, tStart, tEnd, Mean_mA, Median_mA, SD_mA, Peak_mA, AboveIdle_mA);
     disp(taskTbl)
     writetable(taskTbl, fullfile(sesDir, 'task_summary.csv'));
 
     %% Idle: radio on vs off
     idleWin = {
-        'Pre-script',      W{1,2}, W{1,3}
-        'Idle (pre-IMU)',  W{2,2} + edgeTrim, W{2,3} - edgeTrim
+        'Pre-connection',  W{1,2}, W{1,3}
+        'Idle',            W{2,2} + edgeTrim, W{2,3} - edgeTrim
         'Idle (post-IMU)', [imuOff + 0.3, W{10,2} + edgeTrim], [imuOff + iti - 0.2, W{10,3} - edgeTrim]
         };
     nI = size(idleWin, 1);
@@ -366,10 +368,27 @@ for s = 1:numel(recs)
         ep(end+1, :) = [W{w,2}, W{w,3}, Mean_mA(w), w]; %#ok<AGROW>
         tPrev = W{w,3};
     end
+    % Mean-current trace: one level per epoch, except the stimulation, which
+    % has one level for the full-amplitude part and then follows the ramp-down
+    % as a running mean over one sweep (so the LED-to-LED pattern averages out)
+    px = []; py = [];
+    tRamp = sweepT(nFull + 1);
+    for e = 1:size(ep, 1)
+        if ep(e, 4) == stimIdx
+            tc1 = (tRamp + period/2 : 10e-3 : ep(e, 2) - period/2)';
+            yc  = arrayfun(@(t) mean(double(seg(t - period/2, t + period/2))), tc1);
+            fullMean = mean(double(seg(ep(e, 1), tRamp)));
+            px = [px; ep(e, 1); tRamp; tc1; ep(e, 2)]; %#ok<AGROW>
+            py = [py; fullMean; fullMean; yc; yc(end)]; %#ok<AGROW>
+        else
+            px = [px; ep(e, 1); ep(e, 2)]; %#ok<AGROW>
+            py = [py; ep(e, 3); ep(e, 3)]; %#ok<AGROW>
+        end
+    end
     f = newFigure(figWidth, 7.5);
     ax = axes(f, 'Units', 'centimeters', 'Position', [1.4 1.0 figWidth - 1.9 4.9]);
     hold(ax, 'on')
-    yTop = ceil(max(ep(:, 3))) + 1;
+    yTop = ceil(max(py)) + 1;
     for e = 1:size(ep, 1)
         if ep(e, 4) == 0
             c = intervalColor;
@@ -378,7 +397,7 @@ for s = 1:numel(recs)
         end
         patch(ax, ep(e, [1 2 2 1]), [0 0 yTop yTop], c, 'EdgeColor', 'none');
     end
-    stairs(ax, [ep(:, 1); ep(end, 2)], [ep(:, 3); ep(end, 3)], '-', 'Color', ink, 'LineWidth', 1.25);
+    plot(ax, px, py, '-', 'Color', ink, 'LineWidth', 1.25);
     hold(ax, 'off')
     styleAxes(ax);
     ax.Layer = 'top';
@@ -388,7 +407,9 @@ for s = 1:numel(recs)
     for w = 1:nW
         yRow = 1.03 + 0.11*mod(w + 1, 2);
         if w == nW, xT = W{w,3}; ha = 'right'; else, xT = mean([W{w,2} W{w,3}]); ha = 'center'; end
-        text(ax, xT, yRow * yTop, W{w,1}, 'HorizontalAlignment', ha, ...
+        lbl = W{w,1};
+        if strcmp(lbl, 'Idle (post-IMU)'), lbl = 'Idle'; end   % Figure 1: both idle epochs are 'Idle'
+        text(ax, xT, yRow * yTop, lbl, 'HorizontalAlignment', ha, ...
             'VerticalAlignment', 'bottom', 'FontSize', 8, 'Color', ink, 'Clipping', 'off');
         line(ax, [W{w,2} W{w,3}], [1 1]*(yRow - 0.01)*yTop, 'Color', tc(w, :), 'LineWidth', 1.5, ...
             'Clipping', 'off');
@@ -422,17 +443,68 @@ for s = 1:numel(recs)
     %% Figure 3: summary
     f = newFigure(figWidth, 8);
     tl = tiledlayout(f, 1, 2, 'TileSpacing', 'loose', 'Padding', 'compact');
-    ax1 = nexttile(tl);
-    b = barh(ax1, 1:nW, Mean_mA, 0.7, 'FaceColor', 'flat', 'EdgeColor', 'none');
-    b.CData = tc;
-    for w = 1:nW
-        text(ax1, Mean_mA(w) + 0.2, w, sprintf('%.2f', Mean_mA(w)), ...
+    % a: mean +/- s.d. per function, in three groups. s.d. is over time:
+    % 100 ms bin means (one-sweep bins for stimulation, which uses its
+    % full-amplitude part); for radio events, the spread across events.
+    taskWin = @(name) W(strcmp(W(:,1), name), 2:3);
+    rowNames = {'Idle', 'Radio event', 'Programming', 'Battery reads', 'µLED checks', ...
+        'IMU streaming', 'Status LED', 'Sham LED', 'Stimulation'};
+    rowTask  = {'Idle', '', 'Program', 'Battery reads', 'µLED checks', ...
+        'IMU streaming', 'Status LED', 'Sham LED', ''};
+    rowMean = zeros(9, 1); rowSD = zeros(9, 1);
+    for i = 1:9
+        if strcmp(rowNames{i}, 'Radio event')
+            ev = radio{2}.eventMeans;          % events during the idle period
+            rowMean(i) = radio{2}.onMean; rowSD(i) = std(ev);
+            continue
+        elseif strcmp(rowNames{i}, 'Stimulation')
+            t1 = W{stimIdx, 2}; t2 = sweepT(nFull + 1); bin = period;
+        else
+            tw = taskWin(rowTask{i}); t1 = tw{1} + edgeTrim; t2 = tw{2} - edgeTrim; bin = 0.1;
+        end
+        x = double(seg(t1, t2));
+        n = round(bin*fs); nb = floor(numel(x)/n);
+        rowMean(i) = mean(x);
+        rowSD(i) = std(mean(reshape(x(1:nb*n), n, nb), 1));
+    end
+    shamMean = rowMean(strcmp(rowNames, 'Sham LED'));
+    yPos = [1 2 3, 4.8 5.8 6.8, 8.6 9.6 10.6];
+    barH = 0.7;
+    greenSoft   = 1 - 0.45*(1 - tc(strcmp(Task, "IMU streaming"), :));   % IMU colour of Figure 1, lightened
+    statusRed   = [0.898 0.549 0.541];
+    shamBlue    = [0.600 0.749 0.902];
+    trueBlue    = [0.129 0.400 0.675];
+    ax1 = nexttile(tl); hold(ax1, 'on')
+    for i = 1:9
+        y = yPos(i) + [-1 -1 1 1]*barH/2;
+        switch rowNames{i}
+            case 'Status LED', c = statusRed;
+            case 'Sham LED',   c = shamBlue;
+            case 'Stimulation', c = trueBlue;
+            otherwise,          c = greenSoft;
+        end
+        if strcmp(rowNames{i}, 'Stimulation')
+            patch(ax1, [0 shamMean shamMean 0], y, shamBlue, 'EdgeColor', 'none');
+            patch(ax1, [shamMean rowMean(i) rowMean(i) shamMean], y, c, 'EdgeColor', 'none');
+        else
+            patch(ax1, [0 rowMean(i) rowMean(i) 0], y, c, 'EdgeColor', 'none');
+        end
+    end
+    errorbar(ax1, rowMean, yPos(:), [], [], rowSD, rowSD, 'LineStyle', 'none', ...
+        'Color', ink, 'LineWidth', 0.6, 'CapSize', 3);
+    xMax = ceil(max(rowMean + rowSD) * 1.2);
+    for i = 1:9
+        text(ax1, rowMean(i) + rowSD(i) + 0.02*xMax, yPos(i), sprintf('%.2f', rowMean(i)), ...
             'VerticalAlignment', 'middle', 'FontSize', 8, 'Color', ink);
     end
+    for yd = [3.9 7.7]
+        plot(ax1, [0 xMax], [yd yd], '-', 'Color', [0.8 0.8 0.8], 'LineWidth', 0.5);
+    end
+    hold(ax1, 'off')
     styleAxes(ax1);
-    set(ax1, 'YDir', 'reverse', 'YTick', 1:nW, 'YTickLabel', Task, 'TickLength', [0 0], 'XGrid', 'on');
-    xlim(ax1, [0 ceil(max(Mean_mA)*1.15)]); ylim(ax1, [0.4 nW + 0.6]);
-    xlabel(ax1, 'Mean current (mA)');
+    set(ax1, 'YDir', 'reverse', 'YTick', yPos, 'YTickLabel', rowNames, 'TickLength', [0 0], 'XGrid', 'off');
+    xlim(ax1, [0 xMax]); ylim(ax1, [0.4 11.2]);
+    xlabel(ax1, 'Current consumption (mA)');
     ax2 = nexttile(tl);
     b = bar(ax2, 1:nI, [RadioOff_mA Overall_mA RadioOn_mA], 0.8, 'EdgeColor', 'none');
     for j = 1:3, b(j).FaceColor = rc(j, :); end
@@ -443,7 +515,7 @@ for s = 1:numel(recs)
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom', 'FontSize', 8, 'Color', ink);
     end
     styleAxes(ax2);
-    set(ax2, 'XTick', 1:nI, 'XTickLabel', Window, 'YGrid', 'on');
+    set(ax2, 'XTick', 1:nI, 'XTickLabel', Window, 'YGrid', 'off');
     ylim(ax2, [0 yMax]);
     ylabel(ax2, 'Mean current (mA)');
     legend(ax2, {'Radio off', 'Overall', 'Radio on'}, 'Location', 'northoutside', 'Box', 'off', ...
@@ -578,6 +650,30 @@ for s = 1:numel(recs)
     addPanelLabels([ax1 ax2 ax3]);
     saveFigure(f, fullfile(sesDir, '6_led_summary'));
 
+    %% Figure 7: distribution of per-LED current
+    f = newFigure(figWidth/2, 7);
+    tl = tiledlayout(f, 1, 1, 'Padding', 'compact');
+    ax = nexttile(tl); hold(ax, 'on')
+    % Lit LEDs only, x-axis limited to where they are (one bin of margin);
+    % LEDs that do not light are reported in the text, not drawn
+    lit = LedMean_mA(~Dark);
+    lo = (floor(min(lit)/ledHistBin_mA) - 1) * ledHistBin_mA;
+    hi = (ceil(max(lit)/ledHistBin_mA) + 1) * ledHistBin_mA;
+    edges = lo + (0 : round((hi - lo)/ledHistBin_mA)) * ledHistBin_mA;
+    nLit = histcounts(lit, edges);
+    bar(ax, edges(1:end-1) + ledHistBin_mA/2, nLit, 1, 'FaceColor', tc(stimIdx, :), ...
+        'EdgeColor', 'w', 'LineWidth', 0.5);
+    hold(ax, 'off')
+    styleAxes(ax);
+    ax.YGrid = 'on';
+    xlim(ax, [lo hi]); ylim(ax, [0 ceil(max(nLit)*1.3)]);
+    xlabel(ax, 'µLED current (mA)'); ylabel(ax, 'LEDs');
+    txt = {sprintf('%d lit LEDs', numel(lit)), sprintf('%.2f ± %.2f mA', mean(lit), std(lit))};
+    if any(Dark), txt{end+1} = sprintf('%d not lighting (not shown)', nnz(Dark)); end
+    text(ax, 0.03, 0.97, txt, 'Units', 'normalized', 'VerticalAlignment', 'top', ...
+        'FontSize', 8, 'Color', ink);
+    saveFigure(f, fullfile(sesDir, '7_led_distribution'));
+
     fprintf('Results saved to %s\n\n', sesDir);
     clear i_mA
 end
@@ -642,17 +738,19 @@ end
 function r = radioStats(xs, fs, thr, mergeGap, minDur, pad)
 % Radio on/off statistics over one or more idle segments (cell array)
 floorLvl = median(vertcat(xs{:}));
-allX = []; allM = []; nEv = 0; evLen = [];
+allX = []; allM = []; nEv = 0; evLen = []; evMeans = [];
 for p = 1:numel(xs)
     m = radioMask(xs{p}, fs, floorLvl, thr, mergeGap, minDur, pad);
     [st, en] = runs(m);
     nEv = nEv + numel(st);
+    evMeans = [evMeans; arrayfun(@(i) mean(xs{p}(st(i):en(i))), (1:numel(st))')]; %#ok<AGROW>
     evLen = [evLen; en - st + 1]; %#ok<AGROW>
     allX = [allX; xs{p}(:)]; %#ok<AGROW>
     allM = [allM; m]; %#ok<AGROW>
 end
 allM = logical(allM);
 r.floor = floorLvl;
+r.eventMeans = evMeans;            % mean current of each radio event (mA)
 r.overallMean = mean(allX);
 r.offMean = mean(allX(~allM));
 r.onMean = mean(allX(allM));
@@ -889,10 +987,12 @@ end
 end
 
 function recs = findRecordings(testDir, which)
-% Newest .bin per session-* folder; 'newest' keeps only the overall newest
+% Newest .bin in each recording folder of the test (any subfolder except
+% analysis/, e.g. session-1/ or device_<name>/, holding a .bin and meta.yml);
+% 'newest' keeps only the overall newest
 recs = struct('session', {}, 'bin', {}, 'datenum', {});
-d = dir(fullfile(testDir, 'session-*'));
-d = d([d.isdir]);
+d = dir(testDir);
+d = d([d.isdir] & ~startsWith({d.name}, '.') & ~strcmp({d.name}, 'analysis'));
 for i = 1:numel(d)
     b = dir(fullfile(testDir, d(i).name, '*.bin'));
     if isempty(b), continue, end

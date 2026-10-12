@@ -6,7 +6,7 @@
 clear; clc;
 
 %% Settings
-deviceName = 'OLI-O-0001';
+deviceName = 'FKY-O-0024';
 zmqSocket  = 'tcp://172.24.156.77:5555';  % OptoGrid bridge
 
 % Stimulation programmed into the device, fired on each external trigger

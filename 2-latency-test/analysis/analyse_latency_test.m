@@ -4,14 +4,15 @@
 % int16 channels: CH1 = LED signal, CH2 = external trigger pulse from the
 % function generator. CH1 is either an optical sensor looking at the LED
 % (meta.yml ch1_type: optical) or the voltage across the shunt (ch1_type:
-% current). By default the newest .bin in ../session-*/ (or
-% ../session-*/data/) is analysed with that session's meta.yml, which
-% supplies the sample rate, channel settings and ch1_type.
+% current). By default the newest .bin in the recording folders
+% (../device_<name>/, ../session-*/) is analysed with that folder's meta.yml,
+% which supplies the sample rate, channel settings and ch1_type. Results go
+% to results/<recording folder>/ (e.g. results/device_FKY-O-0024/).
 % The trigger pulse makes the setup send a Bluetooth trigger command to the
 % device, so this is the end-to-end trigger-to-light latency:
 % latency = first light (CH1 leaves its off level) - start of the trigger
 % pulse (CH2 leaves its low level).
-% Output: figure and CSV tables in results/<session>/.
+% Output: figure and CSV tables in results/<recording folder>/, named after the recording.
 clear; clc; close all;
 
 %% Settings
@@ -19,7 +20,7 @@ rootDir = fileparts(mfilename('fullpath'));     % analysis/
 if isempty(rootDir), rootDir = pwd; end
 testDir = fileparts(rootDir);                   % 2-latency-test/
 outDir  = fullfile(rootDir, 'results');
-whichData = 'newest';   % 'newest' or 'all' (newest .bin of every session)
+whichData = 'newest';   % 'newest' (newest .bin overall), 'all' (newest per folder) or 'every' (every .bin)
 
 Rshunt = 10;            % shunt resistor (ohm)
 
@@ -48,18 +49,22 @@ ink         = [0.15 0.15 0.15];
 %% Find recordings
 recs = findRecordings(testDir, whichData);
 if isempty(recs)
-    error('No .bin recordings found in %s', fullfile(testDir, 'session-*'));
+    error('No .bin recordings found in the folders of %s', testDir);
 end
 
 for s = 1:numel(recs)
     session = recs(s).session;
     binFile = recs(s).bin;
-    metaFile = fullfile(testDir, session, 'meta.yml');
+    % Settings: <recording>.meta.yml next to the .bin if present, else the
+    % folder's meta.yml
+    [binDir, binName, binExt] = fileparts(binFile);
+    metaFile = fullfile(binDir, [binName '.meta.yml']);
+    if ~isfile(metaFile), metaFile = fullfile(testDir, session, 'meta.yml'); end
     if ~isfile(metaFile)
         error('%s has no meta.yml; log the recording settings there first.', session);
     end
     meta = readMeta(metaFile);
-    [~, binName, binExt] = fileparts(binFile);
+    fprintf('Settings from %s\n', metaFile);
     if isfield(meta, 'file') && ~endsWith(meta.file, [binName binExt])
         warning('%s: meta.yml lists %s but the newest recording is %s. Check meta.yml is current.', ...
             session, meta.file, [binName binExt]);
@@ -75,7 +80,7 @@ for s = 1:numel(recs)
     fprintf('=== %s: %s ===\n', session, [binName binExt]);
     fprintf('meta.yml: %.3f kHz, CH1 (%s) %g V/div offset %g V, CH2 %g V/div offset %g V\n', ...
         fs/1e3, ch1Type, ch1Range, ch1Off, ch2Range, ch2Off);
-    sesDir = fullfile(outDir, session);
+    sesDir = fullfile(outDir, session);   % results/<recording folder>, e.g. results/device_FKY-O-0024
     if ~isfolder(sesDir), mkdir(sesDir); end
 
     %% Load
@@ -164,9 +169,10 @@ for s = 1:numel(recs)
     Trigger = (1:numel(tTrig))';
     TriggerStart_s = tTrig; FirstLight_s = tLed; Latency_ms = latency_ms;
     LatencyHalfHeight_ms = latencyHalf_ms; FlashDuration_ms = flash_ms;
+    outBase = fullfile(sesDir, binName);   % outputs named after the recording
     writetable(table(Trigger, TriggerStart_s, FirstLight_s, Latency_ms, LatencyHalfHeight_ms, ...
-        FlashDuration_ms), fullfile(sesDir, 'latencies.csv'));
-    writetable(struct2table(stats), fullfile(sesDir, 'latency_summary.csv'));
+        FlashDuration_ms), [outBase '_latencies.csv']);
+    writetable(struct2table(stats), [outBase '_latency_summary.csv']);
 
     %% Figure: trigger-aligned traces, latency histogram, latency per trigger
     f = newFigure(figWidth, 14);
@@ -212,7 +218,7 @@ for s = 1:numel(recs)
     title(ax3, 'Latency per trigger', 'FontWeight', 'normal');
 
     addPanelLabels([ax1 ax2 ax3]);
-    saveFigure(f, fullfile(sesDir, 'latency'));
+    saveFigure(f, [outBase '_latency']);
     fprintf('Results saved to %s\n\n', sesDir);
 end
 
@@ -223,17 +229,20 @@ if 10*voltsPerDiv <= 5, r = 5; else, r = 50; end
 end
 
 function recs = findRecordings(testDir, which)
-% Newest .bin per session-* folder (in the folder or its data/ subfolder);
+% Newest .bin in each recording folder of the test (any subfolder except
+% analysis/, e.g. session-1/ or device_<name>/; also its data/ subfolder);
 % 'newest' keeps only the overall newest
 recs = struct('session', {}, 'bin', {}, 'datenum', {});
-d = dir(fullfile(testDir, 'session-*'));
-d = d([d.isdir]);
+d = dir(testDir);
+d = d([d.isdir] & ~startsWith({d.name}, '.') & ~strcmp({d.name}, 'analysis'));
 for i = 1:numel(d)
     b = [dir(fullfile(testDir, d(i).name, '*.bin')); dir(fullfile(testDir, d(i).name, 'data', '*.bin'))];
     if isempty(b), continue, end
-    [~, k] = max([b.datenum]);
-    recs(end+1) = struct('session', d(i).name, 'bin', fullfile(b(k).folder, b(k).name), ...
-        'datenum', b(k).datenum); %#ok<AGROW>
+    if strcmp(which, 'every'), ks = 1:numel(b); else, [~, ks] = max([b.datenum]); end
+    for k = ks
+        recs(end+1) = struct('session', d(i).name, 'bin', fullfile(b(k).folder, b(k).name), ...
+            'datenum', b(k).datenum); %#ok<AGROW>
+    end
 end
 if strcmp(which, 'newest') && ~isempty(recs)
     [~, k] = max([recs.datenum]);
@@ -296,13 +305,9 @@ end
 end
 
 function saveFigure(f, base)
+% PDF holds a 300 dpi image: hundreds of overlaid traces make a vector PDF ~90 MB
 exportgraphics(f, [base '.png'], 'Resolution', 300, 'BackgroundColor', 'white');
-try
-    exportgraphics(f, [base '.pdf'], 'ContentType', 'vector', 'BackgroundColor', 'white');
-catch
-    % very many traces can be too much for a vector PDF; embed them as an image
-    exportgraphics(f, [base '.pdf'], 'ContentType', 'image', 'Resolution', 300, 'BackgroundColor', 'white');
-end
+exportgraphics(f, [base '.pdf'], 'ContentType', 'image', 'Resolution', 300, 'BackgroundColor', 'white');
 if isvalid(f), close(f); end
 end
 

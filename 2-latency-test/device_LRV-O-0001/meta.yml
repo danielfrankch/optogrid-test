@@ -1,10 +1,10 @@
-# Test 2 (latency), session 1: recording configuration
-session: 1
-date: 2026-10-09
+# Test 2 (latency), device LRV-O-0001: recording configuration
+# ASSUMED: rig, scope and stimulus settings copied from device_FKY-O-0024/meta.yml; confirm
+date: 2026-10-12
 setup_script: ../og_latency_setup.m   # programs the stimulus, then ends
 
 device:
-  name: FKY-O-0024
+  name: LRV-O-0001
   bridge: tcp://172.24.156.77:5555
 
 sensor:
@@ -12,15 +12,15 @@ sensor:
 
 recording:
   instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
-  file: latency_test_20261009_60s.bin
+  file: latency_test_20261012_60s_1.bin
   type: Binary File (*.bin)
   format: 16 bit signed         # little-endian int16, no header
   channels: 2                   # interleaved samples [C1 C2]
   digital: false
   sample_rate_Hz: 200000        # WaveForms setting 200 kHz
   total_time_s: 60
-  samples_per_channel: 12000000 # 12 M
-  file_bytes: 48000000
+  samples_per_channel: 12000000 # 12 M planned
+  file_bytes: 47803392          # 11950848 samples per channel, 59.75 s
   start: trigger T0
   waveforms_conversion: Volts = Range * Sample / 65536 + Offset
   ch1_signal: optical sensor output on LED 1
@@ -44,8 +44,10 @@ stimulation:                    # og.OptoSetting programmed by og_latency_setup.
 
 trigger:                        # function generator pulse (CH2); each pulse sends a Bluetooth trigger command to the device
   period_ms: 31.3              # not a multiple of the 7.5 ms Bluetooth connection interval
-  recorded_pulses: 1917         # generator ran for the whole 60 s recording
-  pulse_width_ms: 1             # measured on CH2
-  amplitude_V: 2.5              # measured on CH2
+  recorded_pulses: 1908         # measured on CH2
+  pulse_width_ms: 1             # measured on CH1
+  amplitude_V: 3            # measured on CH1
+  symmetry_%: 2             # measured on CH1
+
 
 notes: ""

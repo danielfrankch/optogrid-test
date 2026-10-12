@@ -4,20 +4,49 @@ Bench tests of the OptoGrid wireless optogenetics device, one folder per test:
 
 | Folder | Contents |
 |--------|----------|
-| `pilot-consumption-test/` | First current consumption test (2026-10-08): test script, analysis, data, results, method slide. Documented below. |
-| `1-current-consumption-test/` | Test 1: `og_current_test.m` (100 + 50 stimulation sweeps, 40 s end idle), `session-1/`, `session-2/`, `analysis/analyse_current_test.m` |
-| `2-latency-test/` | Test 2: `og_latency_setup.m` programs LED 1 and ends; each function generator pulse (CH2) sends a Bluetooth trigger command; CH1 is an optical sensor on the LED (or the shunt current, `ch1_type` in meta.yml). `analysis/analyse_latency_test.m` measures trigger pulse start to first light (start of the low-level steps before the main rise). Session 1 (5 ms flash, 31.3 ms trigger period): latency spreads evenly over ~3.5-11.2 ms (the 7.5 ms Bluetooth connection interval) plus a tail of missed connection events; median 8.0 ms. A trigger period that is a multiple of 2.5 ms (e.g. 50 ms) gives discrete 2.5 ms clusters instead. |
+| `pilot-consumption-test/` | First current consumption test (2026-10-08): test script, analysis (v1 and v2), `data/`, `results/`, `results_v2/`, method slide. Documented below. |
+| `1-current-consumption-test/` | Test 1: `og_current_test.m` (100 + 50 stimulation sweeps, 20 s end idle), recordings in `device_FKY-O-0024/` and `device_OLI-O-0001/`, `analysis/analyse_current_test.m`, `test_method.pdf`. |
+| `2-latency-test/` | Test 2: `og_latency_setup.m` programs LED 1 and ends; each function generator pulse (CH2) triggers the Raspberry Pi (GPIO 21), which sends a Bluetooth trigger command; CH1 is a photodiode + amplifier on LED 1 (or the shunt current, `ch1_type` in meta.yml). `analysis/analyse_latency_test.m` measures trigger pulse start to first light. Recordings in `device_FKY-O-0024/` (GPIO interrupt and polling) and `device_LRV-O-0001/`; method slide `latency_test_method.pdf`. |
 | `3-wireless-power-transfer-test/` | `session-1/`, `analysis/` (not started) |
 
-Empty folders hold a `.gitkeep` so git tracks them. Raw `.bin` recordings are git-ignored
-everywhere. Use kebab-case folder names (no spaces).
+## Layout conventions
 
-Each `session-N/` holds its `.bin` recording(s) directly (no `data/` subfolder) and a `meta.yml` logging the recording settings
-(WaveForms record settings, Scope Ch1 range and offset, device, stimulation, schedule).
-`meta.yml` is the reference: the test 1 analysis reads file, sample rate, range and
-offset from it. Test 1 session 1: 299.401 kHz, 500 mV/div, 0 V offset; connected idle
-0.70 mA mean with a floor at 0 mA (the pilot, at -200 mV offset, read a 2.2 mA floor;
-check the pilot offset with a zero-current recording before comparing absolute values).
+```
+<n>-<test-name>/
+  <test script>.m               run on the PC to drive the device
+  <method>.pdf                  method slide (exported from the git-ignored .key)
+  device_<name>/                one folder per device (or session-N/)
+    <recording>.bin             raw WaveForms recording (git-ignored)
+    meta.yml                    recording settings for the folder
+    <recording>.meta.yml        optional, per-recording settings (overrides meta.yml)
+  analysis/
+    analyse_<test>.m            run from MATLAB; reads the .bin + meta.yml
+    results/device_<name>/      figures (.pdf, .png) and tables (.csv, git-ignored)
+```
+
+- Test 1 results: `1_overview` ... `7_led_distribution`, plus `task_summary.csv`, `idle_radio_summary.csv`, `led_summary.csv`.
+- Test 2 results are named after the recording: `<recording>_latency.pdf/.png`, `<recording>_latencies.csv`, `<recording>_latency_summary.csv`.
+- Both analyses default to the newest recording (`whichData` at the top); test 2 also has `'every'`.
+- Git-ignored: `*.bin`, `*.csv`, `*.key`, `*.asv`, `.DS_Store`. Figures are tracked; latency PDFs embed a 300 dpi image (a vector PDF of the overlaid traces is ~90 MB, too big for GitHub).
+- Use kebab-case folder names, no spaces. Empty folders hold a `.gitkeep`.
+
+`meta.yml` is the reference for each recording: the analyses read file, sample rate, ranges,
+offsets, schedule and stimulation from it. Test 1 `device_FKY-O-0024`: 500 mV/div, 0 V offset;
+connected idle 0.70 mA mean with a floor at 0 mA (the pilot, at -200 mV offset, read a 2.2 mA
+floor; check the pilot offset with a zero-current recording before comparing absolute values).
+
+## Latency results (test 2, trigger start to first light)
+
+| Recording | Mode | Trigger period | Median | Mean ± s.d. |
+|---|---|---|---|---|
+| FKY-O-0024 `20261009_60s` | GPIO interrupt | 31.3 ms | 8.01 ms | 8.02 ± 2.37 ms |
+| FKY-O-0024 `20261012_120s_2` | GPIO interrupt | 99.9 ms | 8.46 ms | 8.48 ± 2.39 ms |
+| FKY-O-0024 `20261012_120s_3` | GPIO polling | 99.9 ms | 7.11 ms | 7.15 ± 2.24 ms |
+| LRV-O-0001 `20261012_60s_1` | GPIO interrupt (assumed) | 31.3 ms | 8.28 ms | 8.31 ± 2.44 ms |
+
+Latency spreads evenly over a 7.5 ms window (the Bluetooth connection interval) above a
+~3.5 ms minimum, plus a thin tail of missed connection events. A trigger period that is a
+multiple of 2.5 ms (e.g. 50 ms) gives artificial discrete clusters 2.5 ms apart.
 
 # Pilot consumption test (`pilot-consumption-test/`)
 

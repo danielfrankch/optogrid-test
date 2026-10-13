@@ -18,7 +18,7 @@ recording:
   channels: 2                   # interleaved samples [C1 C2]
   digital: false
   sample_rate_Hz: 200000        # WaveForms setting 200 kHz
-  total_time_s: 60
+  total_time_s: 60 and 120
   samples_per_channel: 12000000 # 12 M
   file_bytes: 48000000
   start: trigger T0
@@ -43,7 +43,8 @@ stimulation:                    # og.OptoSetting programmed by og_latency_setup.
   pwm_frequency_Hz: 50000
 
 trigger:                        # function generator pulse (CH2); each pulse sends a Bluetooth trigger command to the device
-  period_ms: 31.3              # not a multiple of the 7.5 ms Bluetooth connection interval
+  period_ms_session1: 31.3              # not a multiple of the 7.5 ms Bluetooth connection interval
+  period_ms_session2: 99.9
   recorded_pulses: 1917         # generator ran for the whole 60 s recording
   pulse_width_ms: 1             # measured on CH1
   amplitude_V: 3            # measured on CH1

@@ -1,0 +1,4 @@
+# BLE battery log (20261014_142320_load-states_110uF_stim-pw5ms.mat), 2026-10-14, LRV-O-0001 on WPT power
+added_capacitor: 5 x Murata GRM155R60J226ME11 on V_BANK (110 uF nominal, about 11 uF effective)   # CHECK: assumed still fitted from the 13:16 decoupling tests
+added_capacitor_uF: 110
+ble_calibration: none           # radio dips mostly removed, reads close to the bank level; calibration_readbattery_wpt.csv is for no added capacitor

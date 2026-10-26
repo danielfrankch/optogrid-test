@@ -1,0 +1,18 @@
+# Test 3, cap bank hold-up on DC: bank and device powered from a 5.4 V DC supply,
+# the supply pins pulled by hand mid-recording. 110 uF nominal added on V_BANK
+# (5 x Murata GRM155R60J226ME11, 22 uF X5R 0402 6.3 V; about 11 uF effective at 3.8 V).
+date: 2026-10-14
+supply_V: 5.4                   # set on the supply; the scope reads 4.99 V powered (supply limited to ~5 V?)
+added_capacitor: 5 x GRM155R60J226ME11 (110 uF nominal)
+
+recording:
+  instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
+  file: DC_5.4V_CapBank_110uFCap_Test_holdup_1.bin
+  format: 16 bit signed         # little-endian int16, no header
+  channels: [1]
+  sample_rate_Hz: 200000        # as the other cap bank recordings; the 0.97 ms device ripple confirms it
+  waveforms_conversion: Volts = Range * Sample / 65536 - Offset   # see CLAUDE.md for the sign
+  channel_range_V_per_div: 1
+  channel_range_V: 61.6186365983      # C1 Range reported by WaveForms (1 V/div)
+  channel_offset_V: -2.001855472393   # -2 V offset, value as reported for DC_5.0V_CapBank_Test_1
+  probe: TODO                   # where the probe sits (bank terminals?)

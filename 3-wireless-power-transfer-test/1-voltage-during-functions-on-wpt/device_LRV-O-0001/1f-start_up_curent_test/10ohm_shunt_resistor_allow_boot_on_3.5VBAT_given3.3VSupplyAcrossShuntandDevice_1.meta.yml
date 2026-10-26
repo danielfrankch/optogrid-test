@@ -1,0 +1,18 @@
+# Test 3.1f, start-up current: current drawn through a 10 ohm shunt while the power source is enabled.
+# Firmware: allowed to boot when VBAT > 3.5 V, VBAT sampled every 50 ms; LED EN disabled during boot.
+date: 2026-10-19
+device: LRV-O-0001
+shunt_ohm: 10
+supply_V: 3.3                   # across the shunt and the device in series (from the file name)
+
+recording:
+  instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
+  file: 10ohm_shunt_resistor_allow_boot_on_3.5VBAT_given3.3VSupplyAcrossShuntandDevice_1.bin
+  start: trigger T0
+  format: 16 bit signed         # little-endian int16, no header, channel 1 only
+  sample_rate_Hz: 200000        # CHECK: not recorded; 4,000,000 samples = the 20 s recording at 200 kHz
+  waveforms_conversion: Volts = Range * Sample / 65536 - Offset   # see CLAUDE.md for the sign; Offset is 0.07 mV here, so the sign does not matter
+  channel_range_V_per_div: 0.1  # 100 mV/div
+  channel_range_V: 5.60965951424    # C1 Range reported by WaveForms
+  channel_offset_V: -0.000073926714 # C1 Offset reported by WaveForms (0 V set)
+

@@ -1,0 +1,6 @@
+# BLE battery log (wpt_battery_20261014_143716.mat), 2026-10-14, LRV-O-0001 on WPT power
+# og_wpt_test.m altered: every task 1 s, ITI 5 s; stimulation LEDs 2 + 7, one 2 s pulse per trigger
+# (pulse_width 2002 > period 2001 > duration 2000 ms), x5
+added_capacitor: 5 x Murata GRM155R60J226ME11 on V_BANK (110 uF nominal, about 11 uF effective)   # CHECK: assumed still fitted
+added_capacitor_uF: 110
+ble_calibration: none

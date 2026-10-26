@@ -1,0 +1,16 @@
+# Test 3, cap bank hold-up on DC: bank and device powered from a DC supply,
+# the supply pins pulled by hand mid-recording (repeat of Test_1, longer recording)
+date: 2026-10-13
+supply_V: 5.0
+
+recording:
+  instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
+  file: DC_5.0V_CapBank_Test_2.bin
+  format: 16 bit signed         # little-endian int16, no header
+  channels: [1]
+  sample_rate_Hz: 200000        # assumed as Test_1; the 0.97 ms device ripple confirms it
+  waveforms_conversion: Volts = Range * Sample / 65536 - Offset   # see CLAUDE.md for the sign
+  channel_range_V_per_div: 1
+  channel_range_V: 61.6186365983      # C1 Range reported by WaveForms for Test_1; CHECK: assumed same settings
+  channel_offset_V: 0                # 0 V: with Test_1's -2.00 V the 5.0 V supply read 7.02 V; exact value not recorded
+  probe: TODO                   # where the probe sits (bank terminals?)

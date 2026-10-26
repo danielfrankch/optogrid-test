@@ -1,0 +1,7 @@
+# BLE battery log (20261014_144318_stim-sweep_110uF.mat), 2026-10-14: og_wpt_stim_sweep.m stimulation sweep,
+# LED 1, single 5 s pulses at 20-100 %, 6 s ITI, LRV-O-0001 on WPT power
+added_capacitor: 5 x Murata GRM155R60J226ME11 on V_BANK (110 uF nominal, about 11 uF effective)   # CHECK: assumed still fitted
+added_capacitor_uF: 110
+ble_calibration: none
+rs_fixed_ohm: 46                # Rx source resistance with the capacitor: 20261014_142320_load-states_110uF_stim-pw5ms (45) and _143716 (47)
+rx_current_limited: true        # above about 6 mA the Rx limits its current; the linear model only holds below

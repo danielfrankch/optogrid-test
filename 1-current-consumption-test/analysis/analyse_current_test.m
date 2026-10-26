@@ -25,7 +25,7 @@ outDir  = fullfile(rootDir, 'results');
 % Which recordings to analyse: 'newest' = the most recently written .bin in
 % any recording folder; 'all' = the newest .bin of every recording folder.
 % Each session's meta.yml is the reference for its recording (file,
-% sample_rate_Hz, channel_range_V_per_div, channel_offset_V), task schedule
+% sample_rate_Hz, channel_range_V, channel_offset_V), task schedule
 % (schedule_s) and stimulation (period_ms, duration_ms, ramp_down_ms).
 whichData = 'newest';
 
@@ -92,6 +92,7 @@ for s = 1:numel(recs)
     end
     cfg.fs          = metaNum(meta, 'sample_rate_Hz', metaFile);
     cfg.voltsPerDiv = metaNum(meta, 'channel_range_V_per_div', metaFile);
+    cfg.rangeV      = metaNum(meta, 'channel_range_V', metaFile);
     cfg.offsetV     = metaNum(meta, 'channel_offset_V', metaFile);
 
     % Task schedule and stimulation from meta.yml (same as og_current_test.m)
@@ -105,22 +106,22 @@ for s = 1:numel(recs)
     stimDuration_ms = metaNum(meta, 'duration_ms', metaFile);
     stimRampDown_ms = metaNum(meta, 'ramp_down_ms', metaFile);
 
-    fprintf('meta.yml: %.3f kHz, %g V/div, offset %g V; stimulation %g + %g ms; end idle %g s\n', ...
-        cfg.fs/1e3, cfg.voltsPerDiv, cfg.offsetV, stimDuration_ms, stimRampDown_ms, endIdleDur);
+    fprintf('meta.yml: %.3f kHz, %g V/div (Range %.4f V), offset %g V; stimulation %g + %g ms; end idle %g s\n', ...
+        cfg.fs/1e3, cfg.voltsPerDiv, cfg.rangeV, cfg.offsetV, stimDuration_ms, stimRampDown_ms, endIdleDur);
     fprintf('=== %s: %s ===\n', cfg.name, cfg.file);
     sesDir = fullfile(outDir, cfg.name);
     if ~isfolder(sesDir), mkdir(sesDir); end
 
     %% Load and convert to current
-    % WaveForms raw samples are relative to the hardware input range: 5 V
-    % full scale for ranges up to 500 mV/div, 50 V above. The channel
-    % offset is applied in hardware, so it is subtracted back out here.
-    if 10*cfg.voltsPerDiv <= 5, adcFullScale = 5; else, adcFullScale = 50; end
+    % WaveForms: Volts = Range*Sample/65536 - Offset, with Range and Offset
+    % the channel values WaveForms reports for the recording (the manual
+    % writes + Offset, but the offset is applied in hardware and has to be
+    % subtracted back out; see CLAUDE.md)
     fid = fopen(binFile, 'r');
     raw = fread(fid, inf, 'int16=>single');
     fclose(fid);
     fs = cfg.fs;
-    i_mA = (raw * (adcFullScale/65536) - cfg.offsetV) / Rshunt * 1e3;
+    i_mA = (raw * (cfg.rangeV/65536) - cfg.offsetV) / Rshunt * 1e3;
     clear raw
     N = numel(i_mA);
     fprintf('%d samples, %.2f s at %.3f kHz\n', N, N/fs, fs/1e3);

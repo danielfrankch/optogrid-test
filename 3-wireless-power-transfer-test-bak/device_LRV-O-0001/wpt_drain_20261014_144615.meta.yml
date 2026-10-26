@@ -1,0 +1,6 @@
+# BLE battery log (wpt_drain_20261014_144615.mat), 2026-10-14: og_wpt_test_2.m altered: status and sham
+# 0 s, sham + status for 75 s (cutoff not reached), LRV-O-0001 on WPT power
+added_capacitor: 5 x Murata GRM155R60J226ME11 on V_BANK (110 uF nominal, about 11 uF effective)   # CHECK: assumed still fitted
+added_capacitor_uF: 110
+ble_calibration: none
+rs_fixed_ohm: 46                # Rx source resistance with the capacitor: wpt_battery_20261014_142320 (45) and _143716 (47)

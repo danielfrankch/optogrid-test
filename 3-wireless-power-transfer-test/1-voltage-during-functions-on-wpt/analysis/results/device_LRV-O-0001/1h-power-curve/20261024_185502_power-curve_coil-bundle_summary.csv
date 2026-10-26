@@ -1,0 +1,17 @@
+quantity,value,note
+current_limit_mA,9.64031575134761,"I_rx: Rx current (current source), model fit"
+zener_vk_V,4.45430343360628,"zener knee voltage at 1 mA, without the Rz drop (battery-read volts)"
+zener_vs_V,0.0440980965990345,zener knee slope: V per e-fold of current
+zener_rz_ohm,26.4469465332257,zener series resistance
+fit_rms_steps_mA,0.182166027291505,7 settled steps in regulation
+fit_rms_trajectory_mA,0.191147720436391,40 trajectory points (C = 16.5 mF)
+model_peak_power_mW,41.552099022485,"useful power (load + bank), model"
+model_peak_power_I_mA,9.53807762642723,
+model_peak_power_V,4.35644378772471,
+peak_power_mW,41.4095297943482,largest measured useful power (settled step or trajectory)
+peak_power_I_mA,9.56210277783101,
+peak_power_V,4.33058823529412,
+idle_zener_mA,8.50136671949747,zener current at idle
+idle_zener_power_mW,40.6610368585659,of 46.1 mW from the Rx at idle
+steps_below_regulation,2,"status+opto_LED1_a65, status+opto_LED1_a100"
+lowest_step_V,2.89088235294118,brown-out 2.5 V

@@ -1,0 +1,13 @@
+# BLE battery log (20261024_190240_drain-by-sham-status-stim-led_coil-center.mat), 2026-10-24:
+# og_wpt_drain_by_sham_status_stim_led.m as written (status LED, then status + LED 1 at 100 % as one 60 s pulse)
+position: coil-center
+coil_position: centre of the Tx coil, expected lowest flux and power
+tx_coil: 3 turns, 17 cm x 8.5 cm; on one side the 3 turns are bundled together, on the opposite side they are about 5 cm apart
+tx_coil_note: config.coil in the .mat logs height_cm 5; the coil is 17 x 8.5 cm
+device_orientation: flat, horizontal
+rx_tuning_capacitor: "43 pF NP0 50 V + 3.3 pF NP0 50 V 5 % (parallel)"   # retuned 2026-10-24 (4-wireless-power-transfer-coil-test test_4)
+added_capacitor: 5 x Murata GRM155R60J226ME11 on V_BANK (110 uF nominal, about 11 uF effective)   # CHECK: assumed still fitted
+added_capacitor_uF: 110
+ble_calibration: none
+rx_current_rec: 1b-drain-by-sham-status/20261024_190419_drain-by-sham-status_coil-center   # Rx current at this position: <rec>_rx_current.csv
+zener_rec: 1h-power-curve/20261024_185502_power-curve_coil-bundle   # zener knee (device property): <rec>_summary.csv

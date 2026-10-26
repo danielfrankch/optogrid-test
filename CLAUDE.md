@@ -7,7 +7,7 @@ Bench tests of the OptoGrid wireless optogenetics device, one folder per test:
 | `pilot-consumption-test/` | First current consumption test (2026-10-08): test script, analysis (v1 and v2), `data/`, `results/`, `results_v2/`, method slide. Documented below. |
 | `1-current-consumption-test/` | Test 1: `og_current_test.m` (100 + 50 stimulation sweeps, 20 s end idle), recordings in `device_FKY-O-0024/` and `device_OLI-O-0001/`, `analysis/analyse_current_test.m`, `test_method.pdf`. |
 | `2-latency-test/` | Test 2: `og_latency_setup.m` programs LED 1 and ends; each function generator pulse (CH2) triggers the Raspberry Pi (GPIO 21), which sends a Bluetooth trigger command; CH1 is a photodiode + amplifier on LED 1 (or the shunt current, `ch1_type` in meta.yml). `analysis/analyse_latency_test.m` measures trigger pulse start to first light. Recordings in `device_FKY-O-0024/` (GPIO interrupt and polling) and `device_LRV-O-0001/`; method slide `latency_test_method.pdf`. |
-| `3-wireless-power-transfer-test/` | Test 3: `og_wpt_test.m` steps through load states while logging the supercap-bank voltage (`readbattery`); recordings in `device_LRV-O-0001/`. `analysis/analyse_wpt_test.m` fits an Rx source model V = Voc − Rs·I to the settled states in LDO regulation (test 1 currents as loads) and gives Rx power vs load, the max-power / regulation / brown-out limits and time to 2.5 V after WPT cut-off. Runs 203308/203854: Voc ≈ 4.58 V, Rs ≈ 0.19 kΩ, max 28 mW at 12 mA (2.3 V, below brown-out); regulation (≥ 3.4 V) up to ≈ 6.2 mA. The measured voltage follows load steps within one sample, so the 16.5 mF bank does not act on the measured node as modelled (`_model_check` figure). |
+| `3-wireless-power-transfer-test/` | Test 3 (device LRV-O-0001), summary table of every recording in its `README.md`. `1-voltage-during-functions-on-wpt/`: bank voltage on WPT power, sub-tests 1a load states (`og_wpt_load_states.m` / `analyse_load_states.m`, Rx model V = Voc − Rs·I with test 1 currents as loads; no added cap: Voc ≈ 4.58 V, Rs ≈ 0.17 kΩ, max ≈ 31 mW at 13.5 mA, regulation to ≈ 7 mA; with 110 uF on V_BANK Rs ≈ 46 Ω but the Rx current-limits at ≈ 5–6 mA), 1b drain by sham + status (`og_wpt_drain_by_sham_status.m` / `analyse_drain_by_sham_status.m`), 1c LED 1 amplitude sweep (`og_wpt_stim_sweep.m` / `analyse_stim_sweep.m`), 1d duration and 1e ITI sweeps (`analyse_stim_recovery.m`), 1g drain by sham + status + stim LED (`og_wpt_drain_by_sham_status_stim_led.m` / `analyse_drain_by_sham_status_stim_led.m`: status + LED 1 at 100 % for 60 s; plateau 2.84 V at the coil's 3-turn bundle, 2.61 V at its center), 1h power curve (`og_wpt_power_curve.m` / `analyse_power_curve.m`). From 24 Oct (Rx retuned to 43 + 3.3 pF) the power model is a current source I_rx plus the bank zener's soft knee: I_z = I_rx − I_use, V = Vk + Vs·ln(I_z/1 mA) + Rz·I_z (near the bundle I_rx 9.64 mA, Vk 4.45 V, Vs 44 mV, Rz 26 Ω; at the center I_rx 6.1 mA); useful power peaks just below I_rx (≈ 41 mW near the bundle). Recordings carry the device position on the 17 × 8.5 cm, 3-turn Tx coil (`position` in meta.yml and the file name, e.g. `_coil-bundle-5mm`, `_coil-center`). `2-hold-up-during-power-loss/`: 2a WPT switched off with BLE reads (`og_holdup_ble_log.m` / `analyse_wpt_switch_off.m`; 16–42 s without, 61.6 s with 110 uF), 2b DC supply cut, scope only (`plot_dc_cut_scope.m`), 2c DC cut with scope + BLE pairs (`analyse_ble_vs_scope.m`, pairs via `ble_log` in the scope meta.yml; writes `calibration_readbattery_wpt.csv` from the no-cap pair only), 2d decoupling capacitor sizing/tests. Recordings are `<yyyyMMdd_HHmmss>_<test>_<conditions>` (time saved = end) in `device_LRV-O-0001/<sub-test>/`; results in `analysis/results/device_LRV-O-0001/<sub-test>/`. Pre-reorganisation copy: `3-wireless-power-transfer-test-bak/`. |
 
 ## Layout conventions
 
@@ -21,19 +21,27 @@ Bench tests of the OptoGrid wireless optogenetics device, one folder per test:
     <recording>.meta.yml        optional, per-recording settings (overrides meta.yml)
   analysis/
     analyse_<test>.m            run from MATLAB; reads the .bin + meta.yml
-    results/device_<name>/      figures (.pdf, .png) and tables (.csv, git-ignored)
+    results/device_<name>/      figures (.pdf, .png) and tables (.csv)
 ```
 
 - Test 1 results: `1_overview` ... `7_led_distribution`, plus `task_summary.csv`, `idle_radio_summary.csv`, `led_summary.csv`.
 - Test 2 results are named after the recording: `<recording>_latency.pdf/.png`, `<recording>_latencies.csv`, `<recording>_latency_summary.csv`.
 - Both analyses default to the newest recording (`whichData` at the top); test 2 also has `'every'`.
-- Git-ignored: `*.bin`, `*.csv`, `*.key`, `*.asv`, `.DS_Store`. Figures are tracked; latency PDFs embed a 300 dpi image (a vector PDF of the overlaid traces is ~90 MB, too big for GitHub).
+- Git-ignored: `*.bin` (raw recordings, too big for GitHub), `*.key`, `*.asv`, `.DS_Store`. Figures (.pdf, .png) and result tables (.csv) are tracked; latency PDFs embed a 300 dpi image (a vector PDF of the overlaid traces is ~90 MB, too big for GitHub).
 - Use kebab-case folder names, no spaces. Empty folders hold a `.gitkeep`.
+- WaveForms .bin conversion (from the manual and `DC_5.0V_CapBank_Test_1`): Volts = Range*Sample/65536 − Offset,
+  with Range and Offset the exact channel values WaveForms reports (e.g. 1 V/div gave Range 61.62 V,
+  Offset −2.00 V; a 500 mV/div-class channel gave Range 5.49 V). The manual writes "+ Offset", but only
+  "− Offset" reads the 5.0 V supply as 5.00 V. Pilot, test 1 and the test 3 cap-bank plot use it (Range in
+  meta.yml `channel_range_V`, or the pilot script settings); the low-gain Range of Ch1 was not recorded, so
+  5.4925 V (Ch2) is used there (CHECK). The latency analysis (test 2) still uses the old 5 V / 50 V
+  full-scale rule; its timing results do not depend on the scale.
 
 `meta.yml` is the reference for each recording: the analyses read file, sample rate, ranges,
 offsets, schedule and stimulation from it. Test 1 `device_FKY-O-0024`: 500 mV/div, 0 V offset;
-connected idle 0.70 mA mean with a floor at 0 mA (the pilot, at -200 mV offset, read a 2.2 mA
-floor; check the pilot offset with a zero-current recording before comparing absolute values).
+connected idle 1.10 mA mean with a 0.03 mA floor (the pilot, at -200 mV offset, reads 0.93 mA
+with a 0.46 mA floor; check the pilot offset with a zero-current recording before comparing
+absolute values).
 
 ## Latency results (test 2, trigger start to first light)
 
@@ -103,12 +111,12 @@ stimulation. The other settings are `pulse_width = 2`, `amplitude = 100` and
   | 1 | `..._081026_1.bin` | 400 kHz | 100 mV/div | -200 mV |
   | 2 | `..._081026_2.bin` | 299.401 kHz | 100 mV/div | -200 mV |
 
-- Conversion: V = raw × 5/65536 − offset. Raw counts are relative to the hardware input
-  range, which is 5 V full scale for any setting up to 500 mV/div (50 V above that), not
-  to the on-screen V/div. The hardware applies the offset, so it is subtracted back out.
-  This conversion is inferred, not documented: it is the only one that gives physically
-  sensible currents (connected idle ≈ 2.6 mA). A recording with the device unplugged
-  would confirm the zero-current level.
+- Conversion: V = Range × raw/65536 − offset, with Range the value WaveForms reports for
+  the channel (`rangeV` in the script settings; 5.4925 V, the Ch2 low-gain value, as Ch1's
+  was not recorded) rather than the on-screen V/div. The hardware applies the offset, so it
+  is subtracted back out. The older 5 V full-scale rule read idle as 2.6 mA; with the
+  reported Range the pilot agrees with test 1. A recording with the device unplugged would
+  confirm the zero-current level.
 - Recording starts before `og_test_1.m` runs and stops after it, about 90 s in total.
 
 ## How the analysis works
@@ -129,16 +137,18 @@ stimulation. The other settings are `pulse_width = 2`, `amplitude = 100` and
 
 The two sessions agree to within about 0.1 mA unless noted.
 
-- Pre-script (status LED on, before connect): 6.1 mA
-- Connected idle: 2.64 mA mean, with a 2.2 mA floor
+(Numbers use the reported-Range conversion of 2026-10-13; see Recording setup.)
+
+- Pre-script (status LED on, before connect): 4.75 mA
+- Connected idle: 0.93 mA mean, with a 0.46 mA floor
 - Radio events in idle: about 44 per second (30 ms connection interval), about 0.55 ms
-  long, about 2.9 µC each. Radio-off current 2.51 mA, radio-on 7.9 mA.
-- 1 kHz ticks, about 50 µs and up to about 12 mA, appear in every state.
-- Status LED: +3.5 mA. Sham LED: +2.1–2.4 mA.
+  long, about 3.2 µC each. Radio-off current 0.79 mA, radio-on 6.6 mA.
+- 1 kHz ticks, about 50 µs long, appear in every state.
+- Status LED: +3.9 mA. Sham LED: +2.4–2.6 mA.
 - Program: no measurable increase over idle.
-- Stimulation: 10.97 mA mean. Each lit uLED adds about 6–7 mA on top of idle + sham.
-- IMU streaming: 6.83 mA.
-- **Idle after IMU stays raised at 4.28 mA (floor 3.2 mA), with a 100 Hz pattern of
+- Stimulation: 10.08 mA mean. Each lit uLED adds about 6.5–7.5 mA on top of idle + sham.
+- IMU streaming: 5.53 mA.
+- **Idle after IMU stays raised at 2.73 mA (floor 1.56 mA), with a 100 Hz pattern of
   about 4 ms at about +2 mA.** Something keeps running after `disableIMU`. Battery reads
   and uLED checks sit on this raised level and add almost nothing visible.
 - Ramp-down: sweep-mean µLED current falls roughly linearly, 92 → 73 → 55 → 37 → 23%

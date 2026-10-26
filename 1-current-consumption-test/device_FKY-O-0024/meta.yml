@@ -25,10 +25,12 @@ recording:
   samples_planned: 38922130     # 38.92213 M
   file_bytes: 46928992          # 23464496 samples, 117.32 s at 200 kHz
   start: trigger T0, before og_current_test.m was started
-  waveforms_conversion: Volts = Range * Sample / 65536 + Offset
+  waveforms_conversion: Volts = Range * Sample / 65536 - Offset   # see CLAUDE.md for the sign
   channel: "1 (1±), differential"
-  channel_range_V_per_div: 0.5  # Scope Ch1 range 500 mV/div (5 V hardware full scale)
-  channel_offset_V: 0           # Scope Ch1 offset 0 V
+  channel_range_V_per_div: 0.5  # Scope Ch1 range 500 mV/div (low-gain hardware range)
+  channel_range_V: 5.49250862671  # Range in the conversion, as WaveForms reports it; CHECK: Ch1 low-gain Range not recorded; 5.49250862671 V is the Ch2
+                                # low-gain Range WaveForms reported on 2026-10-13
+  channel_offset_V: 0           # Scope Ch1 offset 0 V (Offset in the conversion)
 
 stimulation:                    # og.OptoSetting loaded before og.program
   sequence_length: 1

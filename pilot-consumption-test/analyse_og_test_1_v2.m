@@ -22,6 +22,7 @@ sessions = struct( ...
                     'optogrid_individual_function_test_081026_2.bin'}, ...
     'fs',          {400e3, 299.401e3}, ...  % sample rate (Hz)
     'voltsPerDiv', {0.1, 0.1}, ...          % Scope channel range (V/div)
+    'rangeV',      {5.49250862671, 5.49250862671}, ... % WaveForms Range (V); CHECK: Ch2 low-gain value
     'offsetV',     {-0.2, -0.2});           % Scope channel offset (V)
 sessionsToRun = 1:numel(sessions);          % sessions whose file is missing are skipped
 
@@ -89,15 +90,15 @@ for s = sessionsToRun
     if ~isfolder(sesDir), mkdir(sesDir); end
 
     %% Load and convert to current
-    % WaveForms raw samples are relative to the hardware input range: 5 V
-    % full scale for ranges up to 500 mV/div, 50 V above. The channel
-    % offset is applied in hardware, so it is subtracted back out here.
-    if 10*cfg.voltsPerDiv <= 5, adcFullScale = 5; else, adcFullScale = 50; end
+    % WaveForms: Volts = Range*Sample/65536 - Offset, with Range and Offset
+    % the channel values WaveForms reports for the recording (the manual
+    % writes + Offset, but the offset is applied in hardware and has to be
+    % subtracted back out; see CLAUDE.md)
     fid = fopen(binFile, 'r');
     raw = fread(fid, inf, 'int16=>single');
     fclose(fid);
     fs = cfg.fs;
-    i_mA = (raw * (adcFullScale/65536) - cfg.offsetV) / Rshunt * 1e3;
+    i_mA = (raw * (cfg.rangeV/65536) - cfg.offsetV) / Rshunt * 1e3;
     clear raw
     N = numel(i_mA);
     fprintf('%d samples, %.2f s at %.3f kHz\n', N, N/fs, fs/1e3);

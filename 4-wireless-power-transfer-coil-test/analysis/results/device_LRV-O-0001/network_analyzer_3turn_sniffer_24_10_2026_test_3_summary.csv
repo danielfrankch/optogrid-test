@@ -1,0 +1,41 @@
+quantity,value,note
+baseline_from,NaN,network_analyzer_3turn_sniffer_24_10_2026_test_3
+tuning_capacitor_pF,47,47 pF NP0 50 V
+rx_loaded,0,none (LRV-O-0001 not attached)
+sweep_start_MHz,12,
+sweep_stop_MHz,15,
+step_kHz,6,
+f0_A_MHz,13.254,min of smoothed corrected phase
+f0_A_parabola_MHz,13.2528078319397,vertex over the deepest 10%
+Q_A,45.9445997741741,NaN if the half-depth points are outside the sweep
+f_low_A_MHz,13.0837790339958,
+f_high_A_MHz,13.3722568978829,
+dip_depth_A_deg,-14.70208342122,
+phase_baseline_rms_deg,0.171922686509919,baseline misfit outside the dip
+f0_B_MHz,13.2412060119602,Lorentzian fit
+f0_B_err_MHz,0.000346696910916733,1 sigma
+Q_B,49.7290548806296,Lorentzian fit
+Q_B_err,0.212379785073871,1 sigma
+A_B_ohm,6.35752299826096,
+A_B_err_ohm,0.0165873497379526,
+c_B_ohm,-0.126569682227831,fixed at 0 without own baseline
+c_B_err_ohm,0.00412010596632813,
+resid_rms_ohm,0.0688362814559262,
+f0_B_halfmax_MHz,13.2363126587055,midpoint of the half-maximum points
+Q_B_halfmax,48.6914926908939,
+f_low_B_MHz,13.1003924812041,
+f_high_B_MHz,13.3722328362069,
+f0_B_parabola_MHz,13.2486905892994,vertex over the top 10%
+dR_peak_ohm,6.20577980021112,
+L_loop_uH,0.275693957131284,Im(Z)/w outside the resonance
+C_target_pF,52.579880277913,
+C_f0B_pF,55.1421743245925,
+dC_A_pF,-2.45588876261821,
+dC_A_parabola_pF,-2.46579079061812,
+dC_B_pF,-2.56229404667941,
+dC_B_err_pF,0.00288759520579925,fit error only
+dC_B_parabola_pF,-2.50000875321586,
+dC_B_nearest_E24_pF,-2.7,
+C_parasitic_B_pF,8.14217432459246,C at f0_B minus the tuning capacitor
+C_tune_for_target_pF,44.4377059533206,tuning capacitor for fTarget (method B)
+C_tune_nearest_E24_pF,43,

@@ -1,0 +1,21 @@
+# Test 3.2c, cap bank hold-up on DC: bank and device powered from a 4.68 V DC supply,
+# the supply pins pulled by hand mid-recording. 110 uF nominal added on V_BANK
+# (5 x Murata GRM155R60J226ME11). The scope measures the voltage across the
+# capacitor bank. Recorded at the same time as 20261014_180309_dc-cut_4.68V_110uF_ble.mat
+# (og_holdup_ble_log.m, BLE battery reads at 10 Hz).
+date: 2026-10-14
+supply_V: 4.68
+added_capacitor: 5 x GRM155R60J226ME11 (110 uF nominal)
+ble_log: 20261014_180309_dc-cut_4.68V_110uF_ble.mat
+
+recording:
+  instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
+  file: 20261014_180310_dc-cut_4.68V_110uF_scope.bin
+  format: 16 bit signed         # little-endian int16, no header
+  channels: [1]
+  sample_rate_Hz: 200000        # CHECK: assumed as the other cap bank recordings
+  waveforms_conversion: Volts = Range * Sample / 65536 - Offset   # see CLAUDE.md for the sign
+  channel_range_V_per_div: 1    # CHECK: assumed as 20261014_181232 (1 V/div, -2 V offset)
+  channel_range_V: 61.6186365983      # C1 Range reported by WaveForms (1 V/div)
+  channel_offset_V: -2.001855472393   # -2 V offset; value as reported for 20261013_175133
+  probe: across the capacitor bank

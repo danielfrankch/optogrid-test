@@ -1,0 +1,42 @@
+# Test 3 (wireless power transfer), device LRV-O-0001: test configuration
+date: TODO
+test_script: ../../og_wpt_load_states.m
+
+device:
+  name: LRV-O-0001
+  bridge: tcp://172.24.156.77:5555
+  power: wireless power transfer only (no battery / bench supply)  # CHECK
+
+wpt:
+  tx_coil_turns: 3
+  tx_coil_size_cm: [17, 5]      # fixed external coil, width x height
+  tx_drive: TODO                # driver, frequency, input voltage / power
+  device_position: TODO         # where the device sits relative to the coil
+
+measurement:
+  signal: device "battery" (supply) voltage via og.readbattery
+  fs_Hz: 100                    # target battery sample rate; each read is a Bluetooth round trip
+  log: <yyyyMMdd_HHmmss>_load-states[_<note>].mat (time saved), table wpt_battery_df (sample, fs, bat_mv, state) + config
+  states: [idle, status, sham, sham+status, opto_LED2+7_pw12ms_p25ms_d800ms, imu_100Hz]
+
+stimulation:                    # og.OptoSetting programmed before the tasks
+  led_selection: 66             # LEDs 2 and 7 (LED n = bit n-1)
+  pulse_width_ms: 12
+  period_ms: 25
+  duration_ms: 800
+  ramp_up_ms: 0
+  ramp_down_ms: 0
+  amplitude: 100
+  pwm_frequency_Hz: 50000
+
+schedule_s:
+  iti: 3                        # between tasks and between triggers
+  1_idle: 10
+  2_status_led: 10
+  3_sham_led: 10
+  4_sham_and_status_led: 10
+  5_stimulation_triggers: 10    # trigger, 0.8 s stimulation (opto state), 3 s ITI (idle), x10
+  6_imu_streaming: 10           # IMU at 100 Hz (firmware setting)
+  planned_total: 103
+
+notes: ""

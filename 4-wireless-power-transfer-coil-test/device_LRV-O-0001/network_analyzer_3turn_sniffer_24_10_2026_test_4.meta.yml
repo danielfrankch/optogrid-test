@@ -1,0 +1,19 @@
+# Test 4, WPT coil: Rx resonance of the LRV-O-0001 Coil PCBA (Rx coil + tuning capacitor) by the dip method
+# (WaveForms Network Analyzer, CSV export). Wavegen W1 -> 100 ohm -> sniffer loop -> GND. Ch1 = W1 (drive
+# side of the resistor), Ch2 = across the sniffer loop; Ch2 magnitude / phase are relative to Ch1
+# ("Relative: yes" in the CSV header). Read by analysis/analyse_network_analyzer.m.
+date: 2026-10-24
+device: LRV-O-0001
+series_resistor_ohm: 100
+sniffer_coil: 3 turns, 1 cm diameter, taped to the outer casing of the Coil PCBA; coaxial, 1 mm from the Rx coil (casing thickness)
+setup: tuning capacitor back to 43 pF plus 3.3 pF in parallel; Coil PCBA alone (LRV-O-0001 not attached); sniffer taped as before
+rx_load: none (LRV-O-0001 not attached)
+rx_loaded: false
+tuning_capacitor_pF: 46.3       # 43 + 3.3 in parallel
+tuning_capacitor: "43 pF NP0 50 V + 3.3 pF NP0 50 V 5 % (parallel)"
+sweep: 12-15 MHz, 501 steps, linear (6 kHz)
+baseline_lo_Hz: 12.5e6
+baseline_hi_Hz: 14.3e6
+fit_lo_Hz: 12.0e6
+fit_hi_Hz: 15.0e6
+smooth_Hz: 30e3

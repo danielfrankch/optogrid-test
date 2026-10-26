@@ -1,0 +1,18 @@
+# Test 3, cap bank hold-up on DC: bank and device powered from a DC supply,
+# the supply pins pulled by hand mid-recording. Recorded at the same time as
+# wpt_holdup_20261013_190715.mat (og_wpt_test_4.m, BLE battery reads).
+date: 2026-10-13
+supply_V: 5.0
+ble_log: wpt_holdup_20261013_190715.mat
+
+recording:
+  instrument: "Digilent Analog Discovery Studio, WaveForms Scope (Mode: Record)"
+  file: DC_5.0V_CapBank_Test_4.bin
+  format: 16 bit signed         # little-endian int16, no header
+  channels: [1]
+  sample_rate_Hz: 200000
+  waveforms_conversion: Volts = Range * Sample / 65536 - Offset   # see CLAUDE.md for the sign
+  channel_range_V_per_div: 1
+  channel_range_V: 61.6186365983      # C1 Range reported by WaveForms (1 V/div, as Test_1)
+  channel_offset_V: -2.001855472393   # -2 V offset; value as reported for Test_1
+  probe: TODO                   # where the probe sits (bank terminals?)

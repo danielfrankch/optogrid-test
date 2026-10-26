@@ -1,0 +1,31 @@
+quantity,value,note
+trigger_sent_s,6.01909225,PC clock
+stim_seen_on_s,6.1090366875,halfway between the reads around the drop
+stim_seen_off_s,65.5699325,halfway between the reads around the recovery
+stim_seen_duration_s,59.4608958125,programmed 60 s; resolution about one read (0.12 s)
+v_before_V,4.637,"status LED, last reads before the trigger"
+drop_step_V,-1.405,within one read of the trigger
+drop_fit_vinf_V,2.84453615461819,exponential from the second read
+drop_fit_tau_s,6.41867367611407,
+plateau_V,2.8435843373494,mean over the last 20 s before the recovery
+plateau_min_V,2.823,
+margin_to_brownout_V,0.343584337349397,brown-out 2.5 V
+below_regulation_V,0.556415662650603,VCC in regulation above 3.4 V
+cutoff_reached,0,vCut 1800 mV
+recovery_step_V,0.427,within one read of the end
+recovery_fit_vinf_V,4.74540252886815,
+recovery_fit_tau_s,0.728602697503406,
+idle_start_V,4.76464,
+idle_end_V,4.7638,last 20 reads
+rx_current_mA,9.64031575134761,I_rx from 1h-power-curve/20261024_185502_power-curve_coil-bundle
+zener_from,NaN,1h-power-curve/20261024_185502_power-curve_coil-bundle
+idle_model_V,4.77446283768893,zener model at I_rx - test 1 idle current
+status_V,4.64041666666667,"measured, status LED epoch"
+status_model_V,4.64988146670519,zener model at I_rx - test 1 status current
+idle_zener_power_mW,40.6482173013517,of 45.9 mW from the Rx at idle
+plateau_zener_mA,0,
+plateau_rx_current_mA,9.64031575134761,I_rx - zener current at the plateau
+plateau_rx_power_mW,27.4130508776347,plateau V x that current
+rx_peak_power_mW,41.4095297943482,measured useful peak at this position (power-curve test; NaN without one)
+demand_in_regulation_mA,16.1959547220745,test 1: idle + status + sham + LED
+failed_reads,0,
